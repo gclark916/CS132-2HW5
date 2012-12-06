@@ -229,7 +229,19 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 		{
 			//TODO: may have to edit index depending on stack region
 			Stack dest = (Stack) w.dest;
-			saveWord = "  sw " + sourceRegister + " " + Integer.toString(dest.index * 4) + "($sp)\n";
+			switch (dest.region)
+			{
+			case Out:
+				saveWord = "  sw " + sourceRegister + " " + Integer.toString(dest.index * 4) + "($sp)\n";
+				break;
+			case Local:
+				Input input = (Input) p;
+				saveWord = "  sw " + sourceRegister + " " + Integer.toString((dest.index + input.outArgCount) * 4) + "($sp)\n";
+				break;
+			default:
+				throw(new Exception("trying to sw into 'in' region of stack"));
+			}
+			
 		}
 		else if (Global.class.isInstance(w.dest))
 		{
@@ -258,7 +270,8 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = "  lw " + r.dest + " " + Integer.toString(source.index * 4) + "($fp)\n";
 				break;
 			case Local:
-				code = "  lw " + r.dest + " " + Integer.toString(source.index * 4) + "($sp)\n";
+				Input input = (Input) p;
+				code = "  lw " + r.dest + " " + Integer.toString((source.index + input.outArgCount) * 4) + "($sp)\n";
 				break;
 			default:
 				throw(new Exception("trying to lw from 'out' region of stack"));	

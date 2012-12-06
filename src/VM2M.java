@@ -86,11 +86,13 @@ public class VM2M {
 	private static String translateText(VFunction[] functions) {
 		
 		TextVisitor textVisitor = new TextVisitor();
-		Input input = new Input(new HashMap<String, Integer>());
+		Input input = new Input(new HashMap<String, Integer>(), 0);
 		String code = ".text\n\n  jal Main\n  li $v0 10\n  syscall\n\n";
 		try {
 			for (VFunction function : functions)
 			{
+				input = new Input(input.strings, function.stack.out);
+				
 				String functionLabel = function.ident + ":\n";
 				String storeFramePointer = "  sw $fp -8($sp)\n";
 				String setNewFramePointer = "  move $fp $sp\n";
