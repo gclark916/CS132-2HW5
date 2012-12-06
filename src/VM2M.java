@@ -39,11 +39,33 @@ public class VM2M {
 		return program;
 	}
 	
+	public static void main2(String args[])
+	{
+		InputStream inputStream;
+		try {
+			inputStream = new FileInputStream("./test/Factorial.opt.vaporm");
+			PrintStream errorStream = System.err;
+			VaporProgram program = parseVapor(inputStream, errorStream);
+			
+			String data = translateData(program.dataSegments);
+			String text = translateText(program.functions);
+			
+			System.out.print(data);
+			System.out.print(text);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public static void main(String args[])
 	{
 		InputStream inputStream;
 		try {
-			inputStream = new FileInputStream("./test/BubbleSort.vaporm");
+			inputStream = System.in;
 			PrintStream errorStream = System.err;
 			VaporProgram program = parseVapor(inputStream, errorStream);
 			

@@ -18,6 +18,8 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 		String code = "";
 		if (a.source.toString().startsWith("$"))
 			code = "  move " + a.dest.toString() + " " + a.source.toString() + "\n";
+		else if (a.source.toString().startsWith(":"))
+			code = "  la " + a.dest.toString() + " " + a.source.toString().substring(1) + "\n";
 		else
 			code = "  li " + a.dest.toString() + " " + a.source.toString() + "\n";
 		return code;
