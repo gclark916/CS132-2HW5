@@ -33,6 +33,13 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 	public Object visit(Object p, VBuiltIn c) throws Exception {
 		String callFunction = "";
 		String code = "";
+		
+		String setArgument = "";
+		if (c.args[0].toString().startsWith("$"))
+			setArgument = "  move $a0 " + c.args[0].toString() + "\n";
+		else
+			setArgument = "  li $a0 " + c.args[0].toString() + "\n";
+		
 		switch (c.op.name)
 		{
 		case "Add":
@@ -162,15 +169,13 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = "  li " + c.dest + (Integer.valueOf(c.args[0].toString()) < Integer.valueOf(c.args[1].toString()) ? "1" : "0") + "\n";
 			break;
 		case "PrintIntS":
-			String moveArgument = "  move $a0 " + c.args[0].toString() + "\n";
 			callFunction = "  jal _print\n";
-			code = moveArgument + callFunction;
+			code = setArgument + callFunction;
 			break;
 		case "HeapAllocZ":
-			String loadArgument = "  li $a0 " + c.args[0].toString() + "\n";
 			callFunction = "  jal _heapAlloc\n";
 			String moveReturnValue = "  move " + c.dest.toString() + " $v0\n";
-			code = loadArgument + callFunction + moveReturnValue;
+			code = setArgument + callFunction + moveReturnValue;
 			break;
 		case "Error":
 			Input input = (Input) p;
@@ -211,6 +216,23 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 			Stack dest = (Stack) w.dest;
 			code = "  sw " + w.source.toString() + " " + Integer.toString(dest.index * 4) + "($sp)\n";
 		}
+		else if (Global.class.isInstance(w.dest))
+		{
+			Global dest = (Global) w.dest;
+			if (w.source.toString().startsWith("$"))
+				code = "  sw " + w.source.toString() + " " + Integer.toString(dest.byteOffset) + "(" + dest.base + ")\n";
+			else
+			{
+				if (Integer.valueOf(w.source.toString()) == 0)
+					code = "  sw $0 " + Integer.toString(dest.byteOffset) + "(" + dest.base + ")\n";
+				else
+				{
+					String loadImmediate = "  li $t9 " + w.source.toString() + "\n";
+					String saveWord = "  sw $t9 " +  Integer.toString(dest.byteOffset) + "(" + dest.base + ")\n";
+					code = loadImmediate + saveWord;
+				}
+			}
+		}
 		else
 			code = "  sw " + w.source.toString() + " (" + w.dest.toString() + ")\n";
 		return code;
@@ -222,7 +244,7 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 		if (Global.class.isInstance(r.source))
 		{
 			Global source = (Global) r.source;
-			code = "  lw " + r.dest + " " + Integer.toString(source.byteOffset) + "(" +source.base + ")\n";
+			code = "  lw " + r.dest + " " + Integer.toString(source.byteOffset) + "(" + source.base + ")\n";
 		}
 		else if (Stack.class.isInstance(r.source))
 		{
