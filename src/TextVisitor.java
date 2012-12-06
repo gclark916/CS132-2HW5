@@ -25,7 +25,11 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 
 	@Override
 	public Object visit(Object p, VCall c) throws Exception {
-		String call = "  jalr " + c.addr.toString() + "\n";
+		String call = "";
+		if (c.addr.toString().startsWith(":"))
+			call = "  jal " + c.addr.toString().substring(1) + "\n";
+		else
+			call = "  jalr " + c.addr.toString() + "\n";
 		return call;
 	}
 
@@ -61,7 +65,7 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = loadImmediate + add;
 			}
 			else
-				code = "  li " + c.dest + String.valueOf((Integer.valueOf(c.args[0].toString()) + Integer.valueOf(c.args[1].toString()))) + "\n";
+				code = "  li " + c.dest + " " + String.valueOf((Integer.valueOf(c.args[0].toString()) + Integer.valueOf(c.args[1].toString()))) + "\n";
 			break;
 		case "Sub":
 			if (c.args[0].toString().startsWith("$"))
@@ -82,7 +86,7 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = loadImmediate + subtract;
 			}
 			else
-				code = "  li " + c.dest + String.valueOf((Integer.valueOf(c.args[0].toString()) - Integer.valueOf(c.args[1].toString()))) + "\n";
+				code = "  li " + c.dest + " " + String.valueOf((Integer.valueOf(c.args[0].toString()) - Integer.valueOf(c.args[1].toString()))) + "\n";
 			break;
 		case "MulS":
 			if (c.args[0].toString().startsWith("$"))
@@ -103,7 +107,7 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = loadImmediate + multiply;
 			}
 			else
-				code = "  li " + c.dest + String.valueOf((Integer.valueOf(c.args[0].toString()) * Integer.valueOf(c.args[1].toString()))) + "\n";
+				code = "  li " + c.dest + " " + String.valueOf((Integer.valueOf(c.args[0].toString()) * Integer.valueOf(c.args[1].toString()))) + "\n";
 			break;
 		case "Eq":
 			if (c.args[0].toString().startsWith("$"))
@@ -124,7 +128,7 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = loadImmediate + setEqual;
 			}
 			else
-				code = "  li " + c.dest + (c.args[0].toString().equals(c.args[1].toString()) ? "1" : "0") + "\n";
+				code = "  li " + c.dest + " " + (c.args[0].toString().equals(c.args[1].toString()) ? "1" : "0") + "\n";
 			break;
 		case "Lt":
 			if (c.args[0].toString().startsWith("$"))
@@ -145,7 +149,7 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = loadImmediate + setLessThanUnsigned;
 			}
 			else
-				code = "  li " + c.dest + (Long.valueOf(c.args[0].toString()) < Long.valueOf(c.args[1].toString()) ? "1" : "0") + "\n";
+				code = "  li " + c.dest + " " + (Long.valueOf(c.args[0].toString()) < Long.valueOf(c.args[1].toString()) ? "1" : "0") + "\n";
 			break;
 		case "LtS":
 			if (c.args[0].toString().startsWith("$"))
@@ -166,7 +170,7 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 				code = loadImmediate + setLessThan;
 			}
 			else
-				code = "  li " + c.dest + (Integer.valueOf(c.args[0].toString()) < Integer.valueOf(c.args[1].toString()) ? "1" : "0") + "\n";
+				code = "  li " + c.dest + " " + (Integer.valueOf(c.args[0].toString()) < Integer.valueOf(c.args[1].toString()) ? "1" : "0") + "\n";
 			break;
 		case "PrintIntS":
 			callFunction = "  jal _print\n";
@@ -203,38 +207,35 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 	@Override
 	public Object visit(Object p, VMemWrite w) throws Exception {
 		String code = "";
+		String setSourceRegister = "";
+		String saveWord = "";
+		String sourceRegister = "";
 		if (w.source.toString().startsWith(":"))
 		{
-			String loadAddress = "  la $t9 " + w.source.toString().substring(1) + "\n";
-			Global dest = (Global) w.dest;
-			String storeWord = "  sw $t9 " + Integer.toString(dest.byteOffset) + "(" + dest.base.toString() + ")\n";
-			code = loadAddress + storeWord;
+			setSourceRegister = "  la $t9 " + w.source.toString().substring(1) + "\n";
+			sourceRegister = "$t9";
 		}
-		else if (Stack.class.isInstance(w.dest))
+		else if (w.source.toString().startsWith("$"))
+			sourceRegister = w.source.toString();
+		else
+		{
+			setSourceRegister = "  li $t9 " + w.source.toString() + "\n";
+			sourceRegister = "$t9";
+		}
+		
+		if (Stack.class.isInstance(w.dest))
 		{
 			//TODO: may have to edit index depending on stack region
 			Stack dest = (Stack) w.dest;
-			code = "  sw " + w.source.toString() + " " + Integer.toString(dest.index * 4) + "($sp)\n";
+			saveWord = "  sw " + sourceRegister + " " + Integer.toString(dest.index * 4) + "($sp)\n";
 		}
 		else if (Global.class.isInstance(w.dest))
 		{
 			Global dest = (Global) w.dest;
-			if (w.source.toString().startsWith("$"))
-				code = "  sw " + w.source.toString() + " " + Integer.toString(dest.byteOffset) + "(" + dest.base + ")\n";
-			else
-			{
-				if (Integer.valueOf(w.source.toString()) == 0)
-					code = "  sw $0 " + Integer.toString(dest.byteOffset) + "(" + dest.base + ")\n";
-				else
-				{
-					String loadImmediate = "  li $t9 " + w.source.toString() + "\n";
-					String saveWord = "  sw $t9 " +  Integer.toString(dest.byteOffset) + "(" + dest.base + ")\n";
-					code = loadImmediate + saveWord;
-				}
-			}
+			saveWord = "  sw " + sourceRegister + " " +  Integer.toString(dest.byteOffset) + "(" + dest.base + ")\n";
 		}
-		else
-			code = "  sw " + w.source.toString() + " (" + w.dest.toString() + ")\n";
+		
+		code = setSourceRegister + saveWord;
 		return code;
 	}
 

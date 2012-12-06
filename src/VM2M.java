@@ -43,7 +43,7 @@ public class VM2M {
 	{
 		InputStream inputStream;
 		try {
-			inputStream = new FileInputStream("./test/BinaryTree.vaporm");
+			inputStream = new FileInputStream("./test/BubbleSort.vaporm");
 			PrintStream errorStream = System.err;
 			VaporProgram program = parseVapor(inputStream, errorStream);
 			
