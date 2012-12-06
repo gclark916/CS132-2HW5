@@ -1,0 +1,37 @@
+Main:
+li $a0 4
+jal _heapAlloc
+sw :vmt_Fac (cs132.vapor.ast.VMemRef$Global@4d1b92ef)
+bne $0 $t0 null1
+la $a0 "null pointer"
+j _error
+lw $t1 (cs132.vapor.ast.VMemRef$Global@4d4bb075)
+lw $t1 (cs132.vapor.ast.VMemRef$Global@242df8f8)
+move $a0 12.9
+move $a1 13.9
+jalr $t1
+move $t1 15.9
+move $a0 $t1
+jal _print
+jr $ra
+
+Fac.ComputeFac:
+sw $s0 (cs132.vapor.ast.VMemRef$Stack@46347456)
+move $t0 21.9
+move $s0 22.9
+slt $t1 $s0 1
+beq $0 $t1 if1_else
+move $t1 25.9
+j :if1_end
+lw $t2 (cs132.vapor.ast.VMemRef$Global@1dc1de1c)
+lw $t2 (cs132.vapor.ast.VMemRef$Global@22dd0f87)
+subu $t3 $s0 1
+move $a0 31.9
+move $a1 32.9
+jalr $t2
+move $t3 34.9
+mul $t1 $s0 $t3
+move $v0 37.9
+lw $s0 (cs132.vapor.ast.VMemRef$Stack@5f2679f2)
+jr $ra
+
