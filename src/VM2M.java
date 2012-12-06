@@ -43,7 +43,7 @@ public class VM2M {
 	{
 		InputStream inputStream;
 		try {
-			inputStream = new FileInputStream("./test/Factorial.vaporm");
+			inputStream = new FileInputStream("./test/BinaryTree.vaporm");
 			PrintStream errorStream = System.err;
 			VaporProgram program = parseVapor(inputStream, errorStream);
 			
@@ -84,6 +84,14 @@ public class VM2M {
 					{
 						code = code + function.labels[labelIndex].ident + ":\n";
 						labelIndex++;
+					}
+					
+					if (instruction == function.body[function.body.length-1])
+					{
+						String loadReturnAddress = "  lw $ra -4($fp)\n";
+						String loadFramePointer = "  lw $fp -8($fp)\n";
+						String deallocateStack = "  addu $sp $sp " + Integer.toString(8 + 4 * (function.stack.local + function.stack.out)) + "\n";
+						code = code + loadReturnAddress + loadFramePointer + deallocateStack;
 					}
 					code = code + instruction.accept(input, textVisitor);
 				}
