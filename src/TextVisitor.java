@@ -115,19 +115,25 @@ public class TextVisitor extends VisitorPR<Object, Object, Exception> {
 			if (c.args[0].toString().startsWith("$"))
 			{
 				if (c.args[1].toString().startsWith("$"))
-					code = "  seq " + c.dest + " " + c.args[0].toString() + " " + c.args[1].toString() + "\n";
+				{
+					String xor = "  xor $t9 " + c.args[0].toString() + " " + c.args[1].toString() + "\n";
+					String sltiu = "  sltiu " + c.dest + " $t9 1\n";
+					code = xor + sltiu;
+				}
 				else
 				{
 					String loadImmediate = "  li $t9 " + c.args[1].toString() + "\n";
-					String setEqual = "  seq " + c.dest + " " + c.args[0].toString() + " $t9\n";
-					code = loadImmediate + setEqual;
+					String xor = "  xor $t9 " + c.args[0].toString() + " $t9\n";
+					String sltiu = "  sltiu " + c.dest + " $t9 1\n";
+					code = loadImmediate + xor + sltiu;
 				}
 			}
 			else if (c.args[1].toString().startsWith("$"))
 			{
 				String loadImmediate = "  li $t9 " + c.args[0].toString() + "\n";
-				String setEqual = "  seq " + c.dest + " $t9 " + c.args[1].toString() + "\n";
-				code = loadImmediate + setEqual;
+				String xor = "  xor $t9 $t9 " + c.args[1].toString() + "\n"; 
+				String sltiu = "  sltiu " + c.dest + " $t9 1\n";
+				code = loadImmediate + xor + sltiu;
 			}
 			else
 				code = "  li " + c.dest + " " + (c.args[0].toString().equals(c.args[1].toString()) ? "1" : "0") + "\n";
