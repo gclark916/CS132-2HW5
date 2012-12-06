@@ -1,37 +1,84 @@
+.data
+
+vmt_Fac:
+  Fac.ComputeFac
+
+.text
+
+  jal Main
+  li $v0 10
+  syscall
+
 Main:
-li $a0 4
-jal _heapAlloc
-sw :vmt_Fac (cs132.vapor.ast.VMemRef$Global@4d1b92ef)
-bne $0 $t0 null1
-la $a0 "null pointer"
-j _error
-lw $t1 (cs132.vapor.ast.VMemRef$Global@4d4bb075)
-lw $t1 (cs132.vapor.ast.VMemRef$Global@242df8f8)
-move $a0 12.9
-move $a1 13.9
-jalr $t1
-move $t1 15.9
-move $a0 $t1
-jal _print
-jr $ra
+  sw $fp -8($sp)
+  move $fp $sp
+  subu $sp $sp 8
+  sw $ra -4($fp)
+  li $a0 4
+  jal _heapAlloc
+  move $t0 $v0
+  la $t9 vmt_Fac
+  sw $t9 0($t0)
+  bnez $t0 null1
+  la $a0 _str0
+  j _error
+null1:
+  lw $t1 (cs132.vapor.ast.VMemRef$Global@36a06e8d)
+  lw $t1 (cs132.vapor.ast.VMemRef$Global@5eba06ff)
+  move $a0 $t0
+  move $a1 10
+  jalr $t1
+  move $t1 $v0
+  move $a0 $t1
+  jal _print
+  jr $ra
 
 Fac.ComputeFac:
-sw $s0 (cs132.vapor.ast.VMemRef$Stack@46347456)
-move $t0 21.9
-move $s0 22.9
-slt $t1 $s0 1
-beq $0 $t1 if1_else
-move $t1 25.9
-j :if1_end
-lw $t2 (cs132.vapor.ast.VMemRef$Global@1dc1de1c)
-lw $t2 (cs132.vapor.ast.VMemRef$Global@22dd0f87)
-subu $t3 $s0 1
-move $a0 31.9
-move $a1 32.9
-jalr $t2
-move $t3 34.9
-mul $t1 $s0 $t3
-move $v0 37.9
-lw $s0 (cs132.vapor.ast.VMemRef$Stack@5f2679f2)
-jr $ra
+  sw $fp -8($sp)
+  move $fp $sp
+  subu $sp $sp 12
+  sw $ra -4($fp)
+  sw $s0 (cs132.vapor.ast.VMemRef$Stack@7217fef)
+  move $t0 $a0
+  move $s0 $a1
+  slt $t1 $s0 1
+  beqz $t1 if1_else
+  move $t1 1
+  j :if1_end
+if1_else:
+  lw $t2 (cs132.vapor.ast.VMemRef$Global@28562791)
+  lw $t2 (cs132.vapor.ast.VMemRef$Global@303fb547)
+  subu $t3 $s0 1
+  move $a0 $t0
+  move $a1 $t3
+  jalr $t2
+  move $t3 $v0
+  mul $t1 $s0 $t3
+if1_end:
+  move $v0 $t1
+  lw $s0 (cs132.vapor.ast.VMemRef$Stack@26966110)
+  jr $ra
 
+_print:
+  li $v0 1   # syscall: print integer
+  syscall
+  la $a0 _newline
+  li $v0 4   # syscall: print string
+  syscall
+  jr $ra
+
+_error:
+  li $v0 4   # syscall: print string
+  syscall
+  li $v0 10  # syscall: exit
+  syscall
+
+_heapAlloc:
+  li $v0 9   # syscall: sbrk
+  syscall
+  jr $ra
+
+.data
+.align 0
+_newline: .asciiz "\n"
+_str0: .asciiz "null pointer\n"

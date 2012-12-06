@@ -4,13 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.HashMap;
 
 import cs132.util.ProblemException;
 import cs132.vapor.parser.VaporParser;
 import cs132.vapor.ast.VDataSegment;
 import cs132.vapor.ast.VFunction;
 import cs132.vapor.ast.VInstr;
-import cs132.vapor.ast.VInstr.VisitorP;
+import cs132.vapor.ast.VOperand;
 import cs132.vapor.ast.VaporProgram;
 import cs132.vapor.ast.VBuiltIn.Op;
 
@@ -63,18 +64,37 @@ public class VM2M {
 	private static String translateText(VFunction[] functions) {
 		
 		TextVisitor textVisitor = new TextVisitor();
-		String code = "";
+		Input input = new Input(new HashMap<String, Integer>());
+		String code = ".text\n\n  jal Main\n  li $v0 10\n  syscall\n\n";
 		try {
 			for (VFunction function : functions)
 			{
-				code = code + function.ident + ":\n";
+				String functionLabel = function.ident + ":\n";
+				String storeFramePointer = "  sw $fp -8($sp)\n";
+				String setNewFramePointer = "  move $fp $sp\n";
+				String allocateMoreStack = "  subu $sp $sp " + Integer.toString(8 + 4 * (function.stack.local + function.stack.out)) + "\n";
+				String storeReturnAddr = "  sw $ra -4($fp)\n";
 				
+				code = code + functionLabel + storeFramePointer + setNewFramePointer + allocateMoreStack + storeReturnAddr;
+				
+				int labelIndex = 0;
 				for (VInstr instruction : function.body)
 				{
-					code = code + instruction.accept(null, textVisitor);
+					while (labelIndex < function.labels.length && instruction.sourcePos.line > function.labels[labelIndex].sourcePos.line)
+					{
+						code = code + function.labels[labelIndex].ident + ":\n";
+						labelIndex++;
+					}
+					code = code + instruction.accept(input, textVisitor);
 				}
 				
 				code = code + "\n";
+			}
+			
+			code = code + printFunc + errorFunc + heapAllocFunc + finalData;
+			for (String string : input.strings.keySet())
+			{
+				code = code + "_str" + input.strings.get(string).toString() + ": .asciiz " + string.substring(0, string.length()-1) + "\\n\"\n";
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -84,8 +104,44 @@ public class VM2M {
 	}
 
 	private static String translateData(VDataSegment[] dataSegments) {
-		// TODO Auto-generated method stub
-		String code = "";
+		String code = ".data\n\n";
+		for (VDataSegment dataSegment : dataSegments)
+		{
+			code = code + dataSegment.ident + ":\n";
+			for (VOperand.Static value : dataSegment.values)
+			{
+				code = code + "  " + value.toString().substring(1) + "\n";
+			}
+			
+			code = code + "\n";
+		}
 		return code;
 	}
+	
+	static String printFunc = 
+			"_print:\n" +
+			"  li $v0 1   # syscall: print integer\n" +
+			"  syscall\n" +
+			"  la $a0 _newline\n" +
+			"  li $v0 4   # syscall: print string\n" +
+		    "  syscall\n" +
+			"  jr $ra\n\n";
+	
+	static String errorFunc = 
+			"_error:\n" +
+			"  li $v0 4   # syscall: print string\n" +
+			"  syscall\n" +
+			"  li $v0 10  # syscall: exit\n" +
+			"  syscall\n\n";
+	
+	static String heapAllocFunc = 
+			"_heapAlloc:\n" +
+			"  li $v0 9   # syscall: sbrk\n" +
+			"  syscall\n" +
+			"  jr $ra\n\n";
+	
+	static String finalData = 
+			".data\n" +
+			".align 0\n" +
+			"_newline: .asciiz \"\\n\"\n";
 }
